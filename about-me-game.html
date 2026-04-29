@@ -2,29 +2,39 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pawan.exe — A Side-Scrolling Story</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>About Me — A Developer's Side-Scrolling Story</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     height: 100%;
+    width: 100%;
     background: #0b0d12;
     color: #f3eada;
     font-family: 'Courier New', monospace;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+  body {
+    position: fixed;
+    inset: 0;
+    touch-action: none;
   }
   #wrap {
-    position: relative; width: 100vw; height: 100vh;
-    display: flex; align-items: center; justify-content: center;
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh;
+    width: 100dvw; height: 100dvh;
+    overflow: hidden;
   }
   canvas {
     display: block;
     image-rendering: pixelated; image-rendering: crisp-edges;
     background: #0b0d12;
-    box-shadow: 0 0 40px rgba(0,0,0,0.6);
-    max-width: 100%; max-height: 100%;
+    width: 100%; height: 100%;
+    touch-action: none;
   }
   #hud {
     position: absolute; top: 14px; left: 14px;
@@ -64,6 +74,9 @@
     font-family: inherit; color: #fff; margin: 0 1px;
     font-size: 10px;
   }
+  @media (max-width: 720px) {
+    #help { font-size: 9px; padding: 4px 8px; white-space: normal; max-width: 92vw; line-height: 1.5; }
+  }
   #touch {
     position: absolute; bottom: 16px; width: 100%;
     display: none; justify-content: space-between;
@@ -78,11 +91,28 @@
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-size: 20px;
     backdrop-filter: blur(4px);
+    -webkit-tap-highlight-color: transparent;
+  }
+  #touch .btn:active {
+    background: rgba(255,215,107,0.25);
+    transform: scale(0.92);
   }
   #touch .group { display: flex; gap: 10px; }
   @media (hover: none) and (pointer: coarse) {
     #touch { display: flex; }
     #help { display: none; }
+  }
+  @media (hover: none) and (pointer: coarse) and (min-width: 700px) {
+    #touch .btn { width: 72px; height: 72px; font-size: 26px; }
+    #touch { bottom: 24px; padding: 0 28px; }
+  }
+  @media (hover: none) and (pointer: coarse) and (min-width: 1024px) {
+    #touch .btn { width: 88px; height: 88px; font-size: 32px; }
+    #touch { bottom: 36px; padding: 0 40px; }
+  }
+  @media (orientation: portrait) and (hover: none) and (pointer: coarse) {
+    #touch { padding: 0 12px; bottom: 28px; }
+    #touch .group { gap: 8px; }
   }
   #title {
     position: absolute; inset: 0;
@@ -167,6 +197,37 @@
     letter-spacing: 2px; cursor: pointer;
   }
   #ending.show { display: flex; }
+  #gameOver {
+    position: absolute; inset: 0;
+    background: rgba(40,8,8,0.94);
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; z-index: 9;
+    color: #f3eada; padding: 24px; text-align: center;
+  }
+  #gameOver h2 {
+    color: #ff5e5e;
+    font-size: clamp(28px, 6vw, 48px);
+    letter-spacing: 6px; margin-bottom: 14px;
+    text-shadow: 4px 4px 0 #1a1f2e, 0 0 24px rgba(255,94,94,0.5);
+  }
+  #gameOver p { color: #cfc6b4; margin-bottom: 6px; letter-spacing: 1px; line-height: 1.6; }
+  #gameOver button {
+    margin-top: 24px; background: #ff5e5e; color: #1a1f2e;
+    border: none; padding: 12px 28px; font-family: inherit;
+    font-size: 15px; font-weight: bold; letter-spacing: 3px;
+    cursor: pointer; text-transform: uppercase;
+    box-shadow: 0 6px 0 #a02020;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  #gameOver button:active { transform: translateY(4px); box-shadow: 0 2px 0 #a02020; }
+  #gameOver.show { display: flex; }
+  .heart {
+    color: #ff5e5e; font-size: 14px;
+    text-shadow: 0 0 6px rgba(255,94,94,0.5);
+    transition: opacity 0.2s;
+  }
+  .heart.empty { opacity: 0.25; }
+  #livesChip { gap: 2px; padding: 5px 8px; }
   #toast {
     position: absolute; top: 56px; left: 50%;
     transform: translateX(-50%) translateY(-20px);
@@ -193,18 +254,20 @@
   <canvas id="game"></canvas>
 
   <div id="hud">
-    <div class="chip gold" id="chapName">HOME</div>
+    <div class="chip" id="livesChip"><span class="heart">❤</span><span class="heart">❤</span><span class="heart">❤</span></div>
+    <div class="chip gold" id="chapName">ORIGIN</div>
     <div class="chip" id="chapNum">1/8</div>
     <div class="chip cyan" id="skillCount">SKILLS 0/9</div>
     <div class="chip pink" id="coffeeCount">☕ 0</div>
-    <div class="chip" id="bugChip">🐛 0</div>
+    <div class="chip" id="bugChip">🐛 KILLS 0</div>
     <div class="chip boost" id="boostChip" style="display:none;">⚡ CAFFEINE</div>
+    <div class="chip" id="shieldChip" style="display:none;color:#7afcff;border-color:#7afcff;">🛡 SHIELD</div>
   </div>
 
   <div id="toast"></div>
 
   <div id="help">
-    <kbd>← →</kbd> walk &nbsp; <kbd>SHIFT</kbd> sprint &nbsp; <kbd>SPACE</kbd> jump×2 &nbsp; <kbd>↓</kbd> read/watch &nbsp; <kbd>X</kbd> kick/build
+    <kbd>← →</kbd> walk &nbsp; <kbd>SHIFT</kbd> sprint &nbsp; <kbd>SPACE</kbd> jump×2 &nbsp; <kbd>↓</kbd> read/watch &nbsp; <kbd>X</kbd> kick/build &nbsp; <kbd>← ←</kbd> dash &nbsp; · &nbsp; STOMP bugs from above — don't touch sideways!
   </div>
 
   <div id="touch">
@@ -222,20 +285,27 @@
   <div id="title">
     <div class="crt">
       <h2>NOW LOADING…</h2>
-      <h1>PAWAN.EXE</h1>
-      <div class="author">A SIDE-SCROLLING STORY · KANPUR → THE WORLD</div>
+      <h1>ABOUT ME</h1>
+      <div class="author">EVERY DEVELOPER HAS A STORY</div>
       <button id="startBtn">PRESS START</button>
-      <div class="credit">USE ARROW KEYS · TAP TO PLAY ON MOBILE</div>
+      <div class="credit">ARROW KEYS / SPACE / X · TAP CONTROLS ON MOBILE</div>
     </div>
   </div>
 
   <div id="ending">
     <h2>YOU REACHED THE END</h2>
-    <p>That's me — eight little chapters from a curious kid in Kanpur to right now.</p>
-    <p>The story is still being written.</p>
-    <p style="margin-top:14px;color:#7afcff">developerpawanmaurya@gmail.com</p>
+    <p>Eight little chapters from the first spark to right now.</p>
+    <p>Every developer's story is still being written.</p>
     <div class="stat" id="finalStats">SKILLS · COFFEES · GOALS</div>
     <button id="restartBtn">PLAY AGAIN</button>
+  </div>
+
+  <div id="gameOver">
+    <h2>GAME OVER</h2>
+    <p>The bugs got you this time.</p>
+    <p style="color:#7afcff">Bugs squashed: <span id="gameOverKills">0</span></p>
+    <p>Stomp them from above — don't walk into them.</p>
+    <button id="reviveBtn">TRY AGAIN</button>
   </div>
 </div>
 
@@ -257,19 +327,33 @@
   const toastEl = document.getElementById('toast');
   const finalStatsEl = document.getElementById('finalStats');
 
-  const W = 480, H = 270;
-  canvas.width = W; canvas.height = H;
-
-  function fitCanvas() {
-    const ar = W / H;
-    const winAr = window.innerWidth / window.innerHeight;
-    let cw, ch;
-    if (winAr > ar) { ch = window.innerHeight; cw = ch * ar; }
-    else { cw = window.innerWidth; ch = cw / ar; }
-    canvas.style.width = cw + 'px';
-    canvas.style.height = ch + 'px';
+  // Internal pixel resolution adapts to the viewport so the canvas fills
+  // the entire screen on phone, tablet, laptop, and desktop without
+  // letterboxing. Landscape anchors a base height; portrait anchors a
+  // base width. Both modes keep the retro pixel-art feel intact.
+  let W = 480, H = 270, GROUND_Y = 220;
+  function applyResize() {
+    const winW = window.innerWidth;
+    const winH = window.innerHeight;
+    const aspect = winW / winH;
+    if (aspect >= 1) {
+      // Landscape — anchor height, expand width with aspect
+      H = 290;
+      W = Math.max(420, Math.min(960, Math.round(H * aspect)));
+    } else {
+      // Portrait — anchor width, expand height with aspect
+      W = 380;
+      H = Math.max(360, Math.min(900, Math.round(W / aspect)));
+    }
+    canvas.width = W;
+    canvas.height = H;
+    // CSS sizes already 100% of #wrap (which is 100dvw/dvh). The
+    // backing-store aspect matches the window so no stretching occurs.
+    GROUND_Y = Math.round(H * 0.81);
   }
-  window.addEventListener('resize', fitCanvas); fitCanvas();
+  applyResize();
+  window.addEventListener('resize', applyResize);
+  window.addEventListener('orientationchange', () => setTimeout(applyResize, 80));
 
   // ============================================================
   //  AUDIO
@@ -320,10 +404,10 @@
       sign: {
         title: 'CHAPTER 1 — ORIGIN',
         lines: [
-          'Hello, I\'m Pawan.',
-          'Born curious, raised on questions.',
-          'My first computer was a hand-me-down,',
-          'and that was all it took.'
+          'Every dev\'s story starts somewhere.',
+          'A spark. A glowing screen.',
+          'The first time the code did',
+          'what you said — and you stayed.'
         ]
       }
     },
@@ -354,10 +438,10 @@
       sign: {
         title: 'CHAPTER 3 — FIRST DESK',
         lines: [
-          'Got my first job. Got my first bug.',
-          'An ed-tech world built from zero —',
-          'students, courses, certificates, coins.',
-          'Intern by day. Dev by deadline.'
+          'Got the first job. Got the first bug.',
+          'Standups, tickets, mystery deploys.',
+          'Internship → title → career, slowly.',
+          'One commit at a time.'
         ]
       }
     },
@@ -371,8 +455,8 @@
       sign: {
         title: 'CHAPTER 4 — BUILDING THINGS',
         lines: [
-          'WordPress themes, hand-rolled.',
-          'Stripes and storefronts. Coffee and CSS.',
+          'Apps. Websites. Side projects.',
+          'Coffee and CSS. PRs and pushes.',
           'Mentored juniors, fixed strange bugs.',
           'Shipped > perfect. Most of the time.'
         ]
@@ -388,9 +472,9 @@
       sign: {
         title: 'CHAPTER 5 — SOLO ERA',
         lines: [
-          'Just me and the brief.',
-          'Art directors, healthcare, cosmetics —',
-          'each one a tiny world to learn.',
+          'Just you and the brief.',
+          'Strangers becoming clients,',
+          'clients becoming case studies.',
           'Coffee count: classified.'
         ]
       }
@@ -406,8 +490,8 @@
         title: 'CHAPTER 6 — RIGHT NOW (WORK)',
         lines: [
           'Faster pages. Quieter alerts.',
-          'AI-powered widgets that just work.',
-          'Bridging stack and stakeholders,',
+          'Bridging stack and stakeholders.',
+          'The job that finally feels like fit —',
           'one sprint at a time.'
         ]
       }
@@ -423,7 +507,7 @@
         title: 'CHAPTER 7 — OFF THE CLOCK',
         lines: [
           'Off the keyboard, finally.',
-          'Football. Couch. Late-night builds.',
+          'Hobbies that aren\'t side projects.',
           'Touch the world a little —',
           'then come back to code.'
         ]
@@ -442,7 +526,7 @@
           'Still curious. Still building.',
           'Looking for good problems',
           'and good people to solve them with.',
-          'developerpawanmaurya@gmail.com'
+          'The story is still being written.'
         ]
       }
     }
@@ -450,11 +534,12 @@
 
   let WORLD_W = 0;
   for (const c of chapters) { c.startX = WORLD_W; WORLD_W += c.width; }
-  const GROUND_Y = 220;
+  // GROUND_Y is computed by applyResize() and updates on viewport changes
 
   // ============================================================
   //  PLAYER
   // ============================================================
+  const MAX_LIVES = 3;
   const player = {
     x: 60, y: GROUND_Y - 28, w: 14, h: 28,
     vx: 0, vy: 0,
@@ -463,8 +548,15 @@
     walkPhase: 0,
     jumpsLeft: 2,
     kickT: 0,
-    boost: 0,        // caffeine boost time remaining (frames)
-    airComboHits: 0  // bug combo while airborne
+    boost: 0,         // caffeine boost (frames)
+    shield: 0,        // shield power-up (frames of invuln)
+    invuln: 0,        // post-hit invincibility (frames)
+    airComboHits: 0,  // bug combo while airborne
+    lives: MAX_LIVES,
+    dashT: 0,         // dash active timer
+    dashCooldown: 0,
+    lastTapDir: 0, lastTapTime: 0, // for double-tap dash
+    safeX: 60, safeY: GROUND_Y - 28 // last safe respawn point
   };
 
   // ============================================================
@@ -534,12 +626,15 @@
   let coffees = [];
   let bugs = [];
   let bossBugs = [];
+  let bullets = [];     // boss projectiles
+  let shields = [];     // shield power-up drops
   let footballs = [];
   let tvs = [];
   let anvils = [];
   let particles = [];
   let fireworks = [];
   let floatingTexts = []; // combo text etc.
+  let screenShake = 0;    // frames of camera shake
   let screenFlash = { color: null, t: 0 };
 
   // skill list with colors per skill
@@ -555,7 +650,7 @@
     { name: 'AI Prompts',  color: '#c79bff' }
   ];
 
-  const score = { skills: 0, coffees: 0, bugs: 0, bossBugs: 0, goals: 0, shows: 0, builds: 0, bestCombo: 0 };
+  const score = { skills: 0, coffees: 0, bugs: 0, bossBugs: 0, goals: 0, shows: 0, builds: 0, bestCombo: 0, deaths: 0 };
 
   function reset() {
     signs = [];
@@ -563,12 +658,15 @@
     coffees = [];
     bugs = [];
     bossBugs = [];
+    bullets = [];
+    shields = [];
     footballs = [];
     tvs = [];
     anvils = [];
     particles = [];
     fireworks = [];
     floatingTexts = [];
+    screenShake = 0;
     screenFlash = { color: null, t: 0 };
 
     chapters.forEach((ch, i) => {
@@ -644,19 +742,31 @@
       w: 26, h: 18, hits: 0, sparkT: 0, completed: false
     });
 
+    // Shield power-up drops in challenging chapters
+    [chapters[3], chapters[5]].forEach((ch, i) => {
+      shields.push({
+        x: ch.startX + (i === 0 ? 380 : 540),
+        y: GROUND_Y - 60, taken: false, t: Math.random() * Math.PI * 2
+      });
+    });
+
     player.x = 60; player.y = GROUND_Y - player.h;
     player.vx = 0; player.vy = 0;
     player.onGround = true; player.facing = 1;
     player.jumpsLeft = 2; player.kickT = 0;
-    player.boost = 0; player.airComboHits = 0;
+    player.boost = 0; player.shield = 0; player.invuln = 0;
+    player.airComboHits = 0;
+    player.lives = MAX_LIVES;
+    player.dashT = 0; player.dashCooldown = 0;
+    player.safeX = 60; player.safeY = GROUND_Y - player.h;
     camX = 0;
     activeSign = null;
     lastChapter = -1;
     bannerT = 0;
     score.skills = 0; score.coffees = 0; score.bugs = 0;
     score.bossBugs = 0; score.goals = 0; score.shows = 0;
-    score.builds = 0; score.bestCombo = 0;
-    finished = false;
+    score.builds = 0; score.bestCombo = 0; score.deaths = 0;
+    finished = false; gameOver = false;
     updateHud();
   }
 
@@ -666,13 +776,14 @@
   let started = false;
   let activeSign = null;
   let finished = false;
+  let gameOver = false;
   let lastChapter = -1;
   let bannerT = 0;
 
   const stars = [];
   for (let i = 0; i < 80; i++) stars.push({
     x: Math.random() * WORLD_W,
-    y: Math.random() * 130,
+    yFrac: Math.random() * 0.7, // fraction of sky region; resolved at draw time
     r: Math.random() < 0.2 ? 2 : 1,
     t: Math.random() * Math.PI * 2
   });
@@ -738,11 +849,53 @@
     screenFlash.t = 14;
   }
 
+  const livesChipEl = document.getElementById('livesChip');
+  const shieldChipEl = document.getElementById('shieldChip');
+  const gameOverEl = document.getElementById('gameOver');
+  const gameOverKillsEl = document.getElementById('gameOverKills');
   function updateHud() {
     skillCountEl.textContent = `SKILLS ${score.skills}/${SKILLS.length}`;
     coffeeCountEl.textContent = `☕ ${score.coffees}`;
-    bugChipEl.textContent = `🐛 ${score.bugs + score.bossBugs}`;
+    const totalKills = score.bugs + score.bossBugs * 5;
+    bugChipEl.textContent = `🐛 KILLS ${totalKills}`;
     boostChipEl.style.display = player.boost > 0 ? '' : 'none';
+    shieldChipEl.style.display = player.shield > 0 ? '' : 'none';
+    // Lives as hearts
+    let hearts = '';
+    for (let i = 0; i < MAX_LIVES; i++) {
+      hearts += `<span class="heart${i < player.lives ? '' : ' empty'}">❤</span>`;
+    }
+    livesChipEl.innerHTML = hearts;
+  }
+
+  function damagePlayer(sourceX) {
+    if (player.invuln > 0 || player.shield > 0 || gameOver) return false;
+    player.lives -= 1;
+    score.deaths += 1;
+    player.invuln = 90;
+    // knockback away from source
+    const dir = (player.x + player.w / 2) < sourceX ? -1 : 1;
+    player.vx = dir * 5;
+    player.vy = -3.8;
+    player.x += dir * 4;
+    screenShake = 16;
+    flashScreen('#ff5e5e');
+    spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#ff5e5e', 16, 2.4);
+    spawnFloatText(player.x + player.w / 2, player.y - 10, '-1 LIFE', '#ff5e5e');
+    blip(140, 0.18, 'sawtooth', 0.08);
+    setTimeout(() => blip(90, 0.2, 'sawtooth', 0.07), 80);
+    showToast(`OUCH! ${player.lives} ${player.lives === 1 ? 'LIFE' : 'LIVES'} LEFT`, 'pink');
+    if (player.lives <= 0) triggerGameOver();
+    updateHud();
+    return true;
+  }
+
+  function triggerGameOver() {
+    gameOver = true;
+    setTimeout(() => {
+      gameOverKillsEl.textContent = score.bugs + score.bossBugs * 5;
+      gameOverEl.classList.add('show');
+    }, 600);
   }
 
   // ============================================================
@@ -762,18 +915,21 @@
     if (brightness < 0.6) {
       const alpha = (1 - brightness) * 0.95;
       const now = performance.now();
+      const skyMax = GROUND_Y - 40;
       for (const st of stars) {
         const px = st.x - camX * 0.3;
         if (px < -4 || px > W + 4) continue;
+        const py = st.yFrac * skyMax;
         const tw = 0.5 + 0.5 * Math.sin(st.t + now / 600);
         ctx.fillStyle = `rgba(255,245,200,${alpha * tw})`;
-        ctx.fillRect(round(px), round(st.y), st.r, st.r);
+        ctx.fillRect(round(px), round(py), st.r, st.r);
       }
     }
 
     const sunX = 380 - camX * 0.15;
+    const sunY = Math.max(40, Math.round(H * 0.18));
     ctx.fillStyle = brightness > 0.55 ? 'rgba(255,230,160,0.92)' : 'rgba(220,225,255,0.85)';
-    ctx.beginPath(); ctx.arc(sunX, 50, 20, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sunX, sunY, 20, 0, Math.PI * 2); ctx.fill();
 
     drawDecorForChapter(idx);
     if (next !== idx) drawDecorForChapter(next);
@@ -1171,6 +1327,42 @@
     }
   }
 
+  function drawBullet(b) {
+    const sx = b.x - camX;
+    if (sx < -10 || sx > W + 10) return;
+    // glowing magenta projectile
+    ctx.fillStyle = 'rgba(160,32,160,0.4)';
+    ctx.beginPath(); ctx.arc(sx, b.y, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#e535ab';
+    ctx.beginPath(); ctx.arc(sx, b.y, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(round(sx - 1), round(b.y - 1), 2, 2);
+  }
+
+  function drawShield(sh) {
+    if (sh.taken) return;
+    const sx = sh.x - camX;
+    if (sx < -20 || sx > W + 20) return;
+    const t = performance.now() / 400;
+    const yo = Math.sin(sh.t + t) * 4;
+    // aura
+    ctx.fillStyle = 'rgba(122,252,255,0.15)';
+    ctx.beginPath(); ctx.arc(sx, sh.y + yo, 16, 0, Math.PI * 2); ctx.fill();
+    // bubble
+    ctx.fillStyle = 'rgba(122,252,255,0.5)';
+    ctx.beginPath(); ctx.arc(sx, sh.y + yo, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#7afcff'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(sx, sh.y + yo, 9, 0, Math.PI * 2); ctx.stroke();
+    // shine
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(round(sx - 3), round(sh.y - 3 + yo), 2, 2);
+    // label
+    ctx.fillStyle = '#7afcff';
+    ctx.font = '7px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SHIELD', sx, sh.y + yo - 14);
+  }
+
   function drawParticle(p) {
     const sx = p.x - camX;
     if (sx < -10 || sx > W + 10) return;
@@ -1217,10 +1409,37 @@
     const py = round(player.y);
     const f = player.facing;
 
+    // Invulnerability blink — skip drawing every other few frames
+    if (player.invuln > 0 && Math.floor(player.invuln / 4) % 2 === 0) return;
+
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath();
     ctx.ellipse(px + player.w / 2, GROUND_Y + 1, 10, 2, 0, 0, Math.PI * 2);
     ctx.fill();
+
+    // Shield bubble
+    if (player.shield > 0) {
+      const t = performance.now() / 200;
+      const r = 18 + Math.sin(t) * 1.5;
+      const fade = player.shield < 60 && Math.floor(player.shield / 6) % 2 === 0 ? 0.3 : 0.7;
+      ctx.strokeStyle = `rgba(122,252,255,${fade})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(px + player.w / 2, py + player.h / 2, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(122,252,255,${fade * 0.18})`;
+      ctx.beginPath();
+      ctx.arc(px + player.w / 2, py + player.h / 2, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Dash trail
+    if (player.dashT > 0) {
+      for (let i = 1; i < 5; i++) {
+        ctx.fillStyle = `rgba(255,215,107,${0.5 - i * 0.1})`;
+        ctx.fillRect(px - f * (i * 5), py + 6, 8, 12);
+      }
+    }
 
     const walking = Math.abs(player.vx) > 0.1 && player.onGround;
     const phase = walking ? Math.floor(player.walkPhase) % 4 : 0;
@@ -1291,7 +1510,11 @@
     const data = activeSign.data;
     ctx.fillStyle = 'rgba(0,0,0,0.65)';
     ctx.fillRect(0, 0, W, H);
-    const bx = 36, by = 50, bw = W - 72, bh = H - 100;
+    // Centered, sensibly sized box that adapts to any viewport.
+    const bw = Math.min(W - 32, 420);
+    const bh = Math.min(H - 32, 180);
+    const bx = Math.round((W - bw) / 2);
+    const by = Math.round((H - bh) / 2);
     ctx.fillStyle = '#1a1f2e'; ctx.fillRect(bx, by, bw, bh);
     ctx.strokeStyle = '#ffd76b'; ctx.lineWidth = 2;
     ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
@@ -1301,15 +1524,16 @@
     ctx.fillStyle = '#ffd76b';
     ctx.font = 'bold 12px "Courier New", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(data.title, W / 2, by + 24);
+    const cx = bx + bw / 2;
+    ctx.fillText(data.title, cx, by + 26);
     ctx.fillStyle = '#f3eada';
     ctx.font = '11px "Courier New", monospace';
-    data.lines.forEach((l, i) => ctx.fillText(l, W / 2, by + 50 + i * 18));
+    data.lines.forEach((l, i) => ctx.fillText(l, cx, by + 54 + i * 18));
 
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = '9px "Courier New", monospace';
     if (Math.floor(performance.now() / 500) % 2 === 0)
-      ctx.fillText('▼ ↓ OR TAP TO CLOSE', W / 2, by + bh - 12);
+      ctx.fillText('▼ ↓ OR TAP TO CLOSE', cx, by + bh - 12);
   }
 
   // ============================================================
@@ -1321,17 +1545,18 @@
     if (bannerT > 0) {
       bannerT -= 1 / 60;
       const a = Math.min(1, bannerT > 1.4 ? (2.4 - bannerT) / 0.5 : bannerT / 1.4);
+      const by = Math.round(H * 0.30);
       ctx.save();
       ctx.globalAlpha = a;
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.fillRect(0, 90, W, 50);
+      ctx.fillRect(0, by, W, 50);
       ctx.fillStyle = chapters[ch].accent;
       ctx.font = 'bold 14px "Courier New", monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`CHAPTER ${ch + 1}`, W / 2, 110);
+      ctx.fillText(`CHAPTER ${ch + 1}`, W / 2, by + 20);
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 16px "Courier New", monospace';
-      ctx.fillText(chapters[ch].name, W / 2, 130);
+      ctx.fillText(chapters[ch].name, W / 2, by + 40);
       ctx.restore();
     }
   }
@@ -1341,6 +1566,11 @@
   // ============================================================
   function update() {
     if (!started) return;
+    if (gameOver) {
+      // Let particles, fireworks etc. continue subtly
+      tickEffects();
+      return;
+    }
 
     // ---- Sign dialog: edge-only close ----
     if (activeSign) {
@@ -1354,15 +1584,38 @@
       return;
     }
 
+    // ---- Dash detection (double-tap left or right) ----
+    const now = performance.now();
+    if (player.dashCooldown > 0) player.dashCooldown--;
+    if (player.dashT > 0) player.dashT--;
+    function tryDash(dir) {
+      if (player.dashCooldown > 0 || player.dashT > 0) return;
+      if (player.lastTapDir === dir && (now - player.lastTapTime) < 280) {
+        player.dashT = 12;
+        player.dashCooldown = 30;
+        player.facing = dir;
+        spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#ffd76b', 10, 2);
+        screenShake = 4;
+        blip(660, 0.05, 'square', 0.05);
+        setTimeout(() => blip(990, 0.05, 'triangle', 0.04), 30);
+      }
+      player.lastTapDir = dir;
+      player.lastTapTime = now;
+    }
+    if (consumeEdge('left')) tryDash(-1);
+    if (consumeEdge('right')) tryDash(1);
+
     // ---- Movement ----
     const baseSpeed = 2.7;
     const sprintMult = (keys.sprint || player.boost > 0) ? 1.7 : 1;
     const allBonus = score.skills >= SKILLS.length ? 1.12 : 1;
-    const speed = baseSpeed * sprintMult * allBonus;
+    const dashMult = player.dashT > 0 ? 2.4 : 1;
+    const speed = baseSpeed * sprintMult * allBonus * dashMult;
 
     let vx = 0;
     if (keys.left) { vx -= speed; player.facing = -1; }
     if (keys.right) { vx += speed; player.facing = 1; }
+    if (player.dashT > 0) vx = player.facing * speed; // force forward during dash
     player.vx = vx;
     player.x += vx;
     if (player.x < 4) player.x = 4;
@@ -1449,6 +1702,23 @@
       }
     }
 
+    // ---- Shields ----
+    for (const sh of shields) {
+      if (sh.taken) continue;
+      const dx = (player.x + player.w / 2) - sh.x;
+      const dy = (player.y + player.h / 2) - sh.y;
+      if (Math.abs(dx) < 14 && Math.abs(dy) < 16) {
+        sh.taken = true;
+        player.shield = Math.max(player.shield, 0) + 6 * 60;
+        spawnParticles(sh.x, sh.y, '#7afcff', 20, 2.4);
+        spawnFloatText(sh.x, sh.y - 14, '+SHIELD 6s', '#7afcff');
+        flashScreen('#7afcff');
+        sweepUp();
+        showToast('🛡 SHIELD ACTIVE', '');
+        updateHud();
+      }
+    }
+
     // ---- Coffees → caffeine boost ----
     for (const c of coffees) {
       if (c.taken) continue;
@@ -1483,28 +1753,36 @@
       const ch = chapters[chapterFor(b.x)];
       if (b.x < ch.startX + 30 || b.x > ch.startX + ch.width - 30) b.vx *= -1;
 
-      // Stomp
-      const px = player.x + player.w / 2;
-      const py = player.y + player.h;
-      if (px > b.x - 2 && px < b.x + b.w + 2 &&
-          py > b.y - 4 && py < b.y + b.h + 6 && player.vy > 0.5) {
-        b.alive = false;
-        player.vy = -3.8;
-        score.bugs++;
-        player.airComboHits++;
-        const combo = player.airComboHits;
-        score.bestCombo = Math.max(score.bestCombo, combo);
-        spawnParticles(b.x + b.w / 2, b.y, b.variant === 1 ? '#ff5e5e' : '#8a2be2', 16, 2.2);
-        blip(180 + combo * 60, 0.07, 'square', 0.06);
-        if (combo >= 2) {
-          spawnFloatText(b.x + b.w / 2, b.y - 12, `x${combo} COMBO!`, '#ffd76b');
-          showToast(`COMBO x${combo}!`, 'gold');
-          flashScreen('#ffd76b');
-          if (combo >= 3) fanfare();
+      // Collision check — stomp from above kills the bug; any other contact damages the player
+      const overlap = (
+        player.x + 1 < b.x + b.w && player.x + player.w - 1 > b.x &&
+        player.y + player.h - 2 > b.y && player.y + 4 < b.y + b.h
+      );
+      if (overlap) {
+        const py = player.y + player.h;
+        const stomping = player.vy > 0.8 && py < b.y + b.h - 1;
+        if (stomping) {
+          b.alive = false;
+          player.vy = -4.2;
+          score.bugs++;
+          player.airComboHits++;
+          const combo = player.airComboHits;
+          score.bestCombo = Math.max(score.bestCombo, combo);
+          spawnParticles(b.x + b.w / 2, b.y, b.variant === 1 ? '#ff5e5e' : '#8a2be2', 16, 2.4);
+          blip(180 + combo * 60, 0.07, 'square', 0.06);
+          if (combo >= 2) {
+            spawnFloatText(b.x + b.w / 2, b.y - 12, `x${combo} COMBO!`, '#ffd76b');
+            showToast(`COMBO x${combo}!`, 'gold');
+            flashScreen('#ffd76b');
+            if (combo >= 3) fanfare();
+          } else {
+            spawnFloatText(b.x + b.w / 2, b.y - 10, '+1 KILL', '#c79bff');
+          }
+          updateHud();
         } else {
-          spawnFloatText(b.x + b.w / 2, b.y - 10, 'BUG SQUASHED', '#c79bff');
+          // side or under contact = damage
+          damagePlayer(b.x + b.w / 2);
         }
-        updateHud();
       }
     }
 
@@ -1514,42 +1792,78 @@
       bb.t += 0.04;
       if (bb.stunned > 0) bb.stunned--;
       else {
-        // patrol
         bb.x += bb.vx;
         const ch = chapters[5];
         if (bb.x < ch.startX + ch.width - 320) bb.vx = Math.abs(bb.vx);
         if (bb.x > ch.startX + ch.width - 80) bb.vx = -Math.abs(bb.vx);
       }
-      const px = player.x + player.w / 2;
-      const py = player.y + player.h;
-      const inX = px > bb.x - 2 && px < bb.x + bb.w + 2;
-      const inY = py > bb.y - 4 && py < bb.y + bb.h + 6;
-      if (inX && inY && player.vy > 0.5 && bb.stunned <= 0) {
-        bb.hp--;
-        bb.stunned = 30;
-        player.vy = -4.8;
-        spawnParticles(bb.x + bb.w / 2, bb.y, '#a020a0', 22, 2.6);
-        blip(220, 0.08, 'sawtooth', 0.07);
-        spawnFloatText(bb.x + bb.w / 2, bb.y - 12, `HIT! ${bb.hp}/${bb.maxHp}`, '#ffd76b');
-        if (bb.hp <= 0) {
-          bb.alive = false;
-          score.bossBugs++;
-          for (let i = 0; i < 40; i++)
-            spawnParticles(bb.x + bb.w/2, bb.y, ['#a020a0','#ffd76b','#fff'][i%3], 1, 3);
-          flashScreen('#ffd76b');
-          fanfare();
-          showToast('★ BUG #404 DEFEATED ★', 'gold');
-          // drop a free coffee
-          coffees.push({
-            x: bb.x + bb.w / 2, y: GROUND_Y - 32,
-            taken: false, t: 0
-          });
+      // Boss fires a bullet every ~1.4s if player is roughly in view
+      bb.fireT = (bb.fireT || 0) - 1;
+      const playerInView = Math.abs(player.x - bb.x) < W * 0.7;
+      if (bb.fireT <= 0 && playerInView && bb.stunned <= 0) {
+        bb.fireT = 80 + Math.floor(Math.random() * 20);
+        const dx = (player.x + player.w / 2) - (bb.x + bb.w / 2);
+        const dy = (player.y + player.h / 2) - (bb.y + bb.h / 2);
+        const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+        bullets.push({
+          x: bb.x + bb.w / 2, y: bb.y + 6,
+          vx: (dx / dist) * 2.2, vy: (dy / dist) * 2.2 - 0.4,
+          life: 220
+        });
+        blip(380, 0.06, 'sawtooth', 0.05);
+      }
+
+      // Stomp / contact resolution
+      const overlap = (
+        player.x + 1 < bb.x + bb.w && player.x + player.w - 1 > bb.x &&
+        player.y + player.h - 2 > bb.y && player.y + 4 < bb.y + bb.h
+      );
+      if (overlap) {
+        const py = player.y + player.h;
+        const stomping = player.vy > 0.8 && py < bb.y + bb.h - 2 && bb.stunned <= 0;
+        if (stomping) {
+          bb.hp--;
+          bb.stunned = 30;
+          player.vy = -5.2;
+          spawnParticles(bb.x + bb.w / 2, bb.y, '#a020a0', 22, 2.6);
+          blip(220, 0.08, 'sawtooth', 0.07);
+          spawnFloatText(bb.x + bb.w / 2, bb.y - 12, `HIT! ${bb.hp}/${bb.maxHp}`, '#ffd76b');
+          if (bb.hp <= 0) {
+            bb.alive = false;
+            score.bossBugs++;
+            for (let i = 0; i < 40; i++)
+              spawnParticles(bb.x + bb.w / 2, bb.y, ['#a020a0','#ffd76b','#fff'][i%3], 1, 3);
+            flashScreen('#ffd76b');
+            screenShake = 18;
+            fanfare();
+            showToast('★ BOSS #404 DEFEATED ★', 'gold');
+            // boss drops a coffee + a shield
+            coffees.push({ x: bb.x + bb.w / 2 - 12, y: GROUND_Y - 32, taken: false, t: 0 });
+            shields.push({ x: bb.x + bb.w / 2 + 12, y: GROUND_Y - 60, taken: false, t: 0 });
+          }
+          updateHud();
+        } else if (bb.stunned <= 0) {
+          damagePlayer(bb.x + bb.w / 2);
         }
-        updateHud();
-      } else if (inX && Math.abs(py - (bb.y + bb.h)) < 6 && bb.stunned <= 0) {
-        // Side bump — knockback player gently, no damage system here
-        player.vx = (px < bb.x + bb.w / 2 ? -3 : 3);
-        player.x += player.vx;
+      }
+    }
+
+    // ---- Boss bullets ----
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      const b = bullets[i];
+      b.x += b.vx; b.y += b.vy; b.vy += 0.06;
+      b.life--;
+      if (b.y > GROUND_Y - 2) {
+        // hit ground — fizz
+        spawnParticles(b.x, GROUND_Y, '#a020a0', 6, 1.2);
+        bullets.splice(i, 1); continue;
+      }
+      if (b.life <= 0) { bullets.splice(i, 1); continue; }
+      // collide with player
+      if (Math.abs(b.x - (player.x + player.w / 2)) < 6 &&
+          Math.abs(b.y - (player.y + player.h / 2)) < 10) {
+        bullets.splice(i, 1);
+        damagePlayer(b.x);
       }
     }
 
@@ -1663,10 +1977,11 @@
       finished = true;
       activeSign = signs[signs.length - 1];
       setTimeout(() => {
+        const totalKills = score.bugs + score.bossBugs * 5;
         finalStatsEl.innerHTML =
-          `SKILLS ${score.skills}/${SKILLS.length} &nbsp; · &nbsp; ☕ ${score.coffees} &nbsp; · &nbsp; ⚽ ${score.goals}<br>` +
-          `🐛 ${score.bugs} &nbsp; · &nbsp; 👹 ${score.bossBugs} BOSS &nbsp; · &nbsp; 📺 ${score.shows} &nbsp; · &nbsp; 🔨 ${score.builds}<br>` +
-          `BEST COMBO &nbsp;x${score.bestCombo}`;
+          `🐛 KILLS &nbsp;${totalKills} &nbsp; · &nbsp; SKILLS ${score.skills}/${SKILLS.length} &nbsp; · &nbsp; ☕ ${score.coffees}<br>` +
+          `⚽ ${score.goals} &nbsp; · &nbsp; 👹 ${score.bossBugs} BOSS &nbsp; · &nbsp; 📺 ${score.shows} &nbsp; · &nbsp; 🔨 ${score.builds}<br>` +
+          `BEST COMBO &nbsp;x${score.bestCombo} &nbsp; · &nbsp; LIVES LOST &nbsp;${score.deaths}/${MAX_LIVES}`;
         endingEl.classList.add('show');
       }, 1200);
     }
@@ -1682,6 +1997,19 @@
       }
       if (player.boost % 60 === 0) updateHud();
     }
+    // shield timer
+    if (player.shield > 0) {
+      player.shield--;
+      if (player.shield === 0) {
+        showToast('SHIELD DOWN', '');
+        updateHud();
+      }
+      if (player.shield % 60 === 0) updateHud();
+    }
+    // invuln blink timer
+    if (player.invuln > 0) player.invuln--;
+    // screen shake decay
+    if (screenShake > 0) screenShake--;
     // particles
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
@@ -1733,17 +2061,28 @@
   //  RENDER
   // ============================================================
   function draw() {
+    // Apply screen shake for hit / boss-defeated impact moments
+    const shaking = screenShake > 0;
+    if (shaking) {
+      const sx = (Math.random() - 0.5) * screenShake * 0.6;
+      const sy = (Math.random() - 0.5) * screenShake * 0.6;
+      ctx.save();
+      ctx.translate(sx, sy);
+    }
+
     drawSkyAndStars();
     drawGround();
 
     for (const o of skillOrbs) drawSkillOrb(o);
     for (const c of coffees) drawCoffee(c);
+    for (const sh of shields) drawShield(sh);
     for (const tv of tvs) drawTV(tv);
     for (const a of anvils) drawAnvil(a);
     for (const s of signs) drawSign(s);
     for (const f of footballs) drawFootball(f);
     for (const b of bugs) drawBug(b);
     for (const bb of bossBugs) drawBossBug(bb);
+    for (const bl of bullets) drawBullet(bl);
 
     drawPlayer();
 
@@ -1751,15 +2090,18 @@
     for (const f of fireworks) drawFirework(f);
     for (const ft of floatingTexts) drawFloatText(ft);
 
+    if (shaking) ctx.restore();
+
     drawScreenFlash();
     drawChapterBanner();
 
     const ch = chapterFor(player.x);
     if (ch === 6) {
       const off = chapters[6];
-      drawZoneLabel('⚽ THE PITCH', off.startX + 350, 50);
-      drawZoneLabel('📺 BINGE LOUNGE', off.startX + 660, 50);
-      drawZoneLabel('🔨 THE WORKSHOP', off.startX + 840, 50);
+      const labelY = Math.max(40, Math.round(H * 0.18));
+      drawZoneLabel('⚽ THE PITCH', off.startX + 350, labelY);
+      drawZoneLabel('📺 BINGE LOUNGE', off.startX + 660, labelY);
+      drawZoneLabel('🔨 THE WORKSHOP', off.startX + 840, labelY);
     }
 
     if (activeSign) drawSignDialog();
@@ -1793,6 +2135,7 @@
   function startGame() {
     titleEl.classList.add('hidden');
     endingEl.classList.remove('show');
+    gameOverEl.classList.remove('show');
     started = true;
     reset();
     getAudio();
@@ -1800,6 +2143,7 @@
   }
   document.getElementById('startBtn').addEventListener('click', startGame);
   document.getElementById('restartBtn').addEventListener('click', startGame);
+  document.getElementById('reviveBtn').addEventListener('click', startGame);
 
   canvas.addEventListener('click', () => {
     if (activeSign) activeSign = null;
